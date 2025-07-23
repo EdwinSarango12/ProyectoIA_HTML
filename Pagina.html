@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat AI - Powered by Botpress</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e5e5e5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #171717;
+            border-right: 1px solid #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #2d2d2d;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d7377;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .new-chat-btn:hover {
+            background: #0a5d61;
+            transform: translateY(-1px);
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #b3b3b3;
+            border-left: 3px solid transparent;
+        }
+
+        .chat-item:hover {
+            background: #2d2d2d;
+            color: #e5e5e5;
+            border-left-color: #0d7377;
+        }
+
+        .chat-item.active {
+            background: #2d2d2d;
+            color: #e5e5e5;
+            border-left-color: #0d7377;
+        }
+
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0f0f0f;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #2d2d2d;
+            background: #171717;
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e5e5e5;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 800px;
+            margin: 0 auto 24px auto;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: messageSlideIn 0.4s ease forwards;
+        }
+
+        @keyframes messageSlideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-content {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #0d7377 0%, #14a085 100%);
+            color: white;
+        }
+
+        .message-text {
+            flex: 1;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .user-message .message-text {
+            background: #2d2d2d;
+            padding: 16px 20px;
+            border-radius: 18px 18px 4px 18px;
+            color: #e5e5e5;
+        }
+
+        .bot-message .message-text {
+            padding: 16px 0;
+            color: #e5e5e5;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            padding: 16px 0;
+            color: #888;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #0d7377;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #2d2d2d;
+            background: #171717;
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .input-wrapper {
+            display: flex;
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 4px;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #0d7377;
+            box-shadow: 0 0 0 4px rgba(13, 115, 119, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 16px 20px;
+            color: #e5e5e5;
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            max-height: 120px;
+            min-height: 24px;
+            line-height: 1.5;
+        }
+
+        .message-input::placeholder {
+            color: #888;
+        }
+
+        .send-button {
+            background: #0d7377;
+            border: none;
+            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            margin: 4px;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0a5d61;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                overflow: hidden;
+            }
+            
+            .sidebar.mobile-open {
+                width: 280px;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #2d2d2d;
+            border-radius: 50%;
+            border-top-color: #0d7377;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" onclick="newChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Nueva conversación
+                </button>
+            </div>
+            <div class="chat-history" id="chatHistory">
+                <!-- Chat history items will be populated here -->
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <h1 class="chat-title">Chat AI Assistant</h1>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome message -->
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <div class="message-avatar bot-avatar">AI</div>
+                        <div class="message-text">
+                            ¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte hoy?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput" 
+                            placeholder="Escribe tu mensaje aquí..."
+                            rows="1"
+                        ></textarea>
+                        <button class="send-button" id="sendButton" onclick="sendMessage()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2 21L21 12L2 3V10L15 12L2 14V21Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+        // Configuración de Botpress
+        const BOTPRESS_CONFIG = {
+            // Reemplaza con tu webhook URL de Botpress
+            webhookUrl: 'https://your-botpress-webhook-url.com/api/v1/bots/your-bot-id/converse/your-user-id',
+            // Headers adicionales si es necesario
+            headers: {
+                'Content-Type': 'application/json',
+                // 'Authorization': 'Bearer your-token' // Si necesitas autenticación
+            }
+        };
+
+        let conversationId = generateConversationId();
+        let isLoading = false;
+
+        // Elementos del DOM
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatMessages = document.getElementById('chatMessages');
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Send message on Enter
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Generar ID único para la conversación
+        function generateConversationId() {
+            return 'conv_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        }
+
+        // Función principal para enviar mensajes
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isLoading) return;
+
+            // Limpiar input
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Mostrar mensaje del usuario
+            addMessage(message, 'user');
+
+            // Mostrar indicador de escritura
+            showTypingIndicator();
+
+            // Deshabilitar envío
+            setLoading(true);
+
+            try {
+                // Llamar a la API de Botpress
+                const response = await callBotpressAPI(message);
+                
+                // Ocultar indicador de escritura
+                hideTypingIndicator();
+                
+                // Mostrar respuesta del bot
+                if (response && response.responses && response.responses.length > 0) {
+                    const botMessage = response.responses[0].text || 'Lo siento, no pude procesar tu mensaje.';
+                    addMessage(botMessage, 'bot');
+                } else {
+                    addMessage('Lo siento, no pude obtener una respuesta en este momento.', 'bot');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                hideTypingIndicator();
+                addMessage('Lo siento, ocurrió un error al procesar tu mensaje. Por favor, inténtalo de nuevo.', 'bot');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Llamada a la API de Botpress
+        async function callBotpressAPI(message) {
+            const payload = {
+                type: 'text',
+                text: message,
+                conversationId: conversationId,
+                // Metadatos adicionales si es necesario
+                metadata: {
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            const response = await fetch(BOTPRESS_CONFIG.webhookUrl, {
+                method: 'POST',
+                headers: BOTPRESS_CONFIG.headers,
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Agregar mensaje al chat
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const isUser = sender === 'user';
+            const avatarText = isUser ? 'TU' : 'AI';
+            const avatarClass = isUser ? 'user-avatar' : 'bot-avatar';
+
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar ${avatarClass}">${avatarText}</div>
+                    <div class="message-text">${formatMessage(text)}</div>
+                </div>
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll suave al final
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+
+        // Formatear mensaje (básico - puedes expandir esto)
+        function formatMessage(text) {
+            // Convertir saltos de línea a <br>
+            text = text.replace(/\n/g, '<br>');
+            
+            // Formateo básico de markdown (opcional)
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            return text;
+        }
+
+        // Mostrar/ocultar indicador de escritura
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'message bot-message';
+            typingDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar bot-avatar">AI</div>
+                    <div class="typing-indicator" style="display: block;">
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Controlar estado de carga
+        function setLoading(loading) {
+            isLoading = loading;
+            sendButton.disabled = loading;
+            
+            if (loading) {
+                sendButton.innerHTML = '<div class="loading"></div>';
+            } else {
+                sendButton.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2 21L21 12L2 3V10L15 12L2 14V21Z"/>
+                    </svg>
+                `;
+            }
+        }
+
+        // Nueva conversación
+        function newChat() {
+            conversationId = generateConversationId();
+            chatMessages.innerHTML = `
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <div class="message-avatar bot-avatar">AI</div>
+                        <div class="message-text">
+                            ¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte hoy?
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Función de ejemplo para agregar historial de chat (puedes implementar persistencia)
+        function addToHistory(title) {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'chat-item';
+            historyItem.textContent = title;
+            historyItem.onclick = () => {
+                // Implementar carga de conversación anterior
+                console.log('Cargar conversación:', title);
+            };
+            document.getElementById('chatHistory').appendChild(historyItem);
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            messageInput.focus();
+            
+            // Ejemplo de historial (opcional)
+            addToHistory('Conversación anterior 1');
+            addToHistory('Pregunta sobre JavaScript');
+            addToHistory('Ayuda con CSS');
+        });
+    </script>
+</body>
+</html>
